@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>حامي المجرة: معركة الأرقام</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050510;
+            color: white;
+            font-family: 'Cairo', sans-serif;
+            overflow: hidden;
+            touch-action: none; /* منع التكبير والسحب في الجوال */
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            background: radial-gradient(circle at bottom, #1B2735 0%, #090A0F 100%);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        /* واجهة المستخدم UI */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .question-box {
+            position: absolute;
+            top: 15%; /* تحريك السؤال للأسفل قليلاً */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ffeb3b;
+            text-shadow: 0 0 20px #ff9800;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 30px;
+            border-radius: 20px;
+            border: 2px solid #ff9800;
+            animation: pulse 1.5s infinite;
+        }
+
+        .visual-dots {
+            font-size: 1rem;
+            color: #00ffcc;
+            margin-top: 5px;
+            letter-spacing: 2px;
+        }
+
+        /* الشاشات المنبثقة */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+        }
+
+        .hidden { display: none !important; }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #FF512F, #DD2476);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            margin: 10px;
+            box-shadow: 0 0 15px rgba(221, 36, 118, 0.6);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(221, 36, 118, 1);
+        }
+
+        .btn-blue {
+            background: linear-gradient(45deg, #1A2980, #26D0CE);
+            box-shadow: 0 0 15px rgba(38, 208, 206, 0.6);
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        /* رسالة التوجيه */
+        .tutorial {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #finalScore { font-size: 2rem; color: #ffeb3b; }
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="gameUI" class="ui-layer hidden">
+            <div class="header-info">
+                <span id="scoreDisplay">النقاط: ٠</span>
+                <span id="healthDisplay">❤️❤️❤️</span>
+            </div>
+            <div id="questionDisplay" class="question-box">
+                <span id="qText">٥ + ٣ = ؟</span>
+                <div id="qVisual" class="visual-dots">***** + ***</div>
+            </div>
+        </div>
+
+        <div id="startScreen" class="screen">
+            <h1>حامي المجرة</h1>
+            <p style="font-size: 1.2rem; color: #aaa;">اختر المرحلة الدراسية</p>
+            <button class="btn btn-blue" onclick="startGame('lower')">الصفوف الأولية (جمع وطرح)</button>
+            <button class="btn" onclick="startGame('upper')">الصفوف العليا (ضرب وقسمة)</button>
+            <p class="tutorial">حرك المركبة واضغط لإطلاق النار على الإجابة الصحيحة!</p>
+        </div>
+
+        <div id="gameOverScreen" class="screen hidden">
+            <h1 style="color: #ff3333; -webkit-text-fill-color: #ff3333;">انتهت اللعبة!</h1>
+            <p id="finalScore">النقاط: ٠</p>
+            <button class="btn" onclick="location.reload()">لعب مرة أخرى</button>
+        </div>
+    </div>
+
+    <script>
+        // --- إعدادات اللعبة ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = 'start'; // start, playing, gameover
+        let gameMode = 'lower'; // lower, upper
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        
+        let currentQuestion = {};
+        let enemies = [];
+        let particles = [];
+        let bullets = [];
+        let stars = []; // خلفية متحركة
+        
+        // تحويل الأرقام للإنجليزي للحساب
+        const toEnglishDigits = (str) => str.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+        // تحويل الأرقام للعربي للعرض
+        const toArabicDigits = (n) => n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+
+        // حجم الشاشة
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- كائنات اللعبة ---
+
+        // اللاعب (المركبة)
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 100,
+            width: 60,
+            height: 60,
+            speed: 0,
+            color: '#00ffff'
+        };
+
+        // الصوت (Synthesizer بسيط)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'shoot') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'explosion') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        // إنشاء الخلفية (النجوم)
+        function initStars() {
+            for(let i=0; i<100; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2,
+                    speed: Math.random() * 3 + 0.5
+                });
+            }
+        }
+
+        // توليد سؤال
+        function generateQuestion() {
+            let qText = "";
+            let qVisual = "";
+            let answer = 0;
+            let n1, n2;
+
+            if (gameMode === 'lower') {
+                // جمع وطرح 0-10
+                if (Math.random() > 0.5) {
+                    // جمع
+                    n1 = Math.floor(Math.random() * 6); // 0-5
+                    n2 = Math.floor(Math.random() * 6); // 0-5
+                    answer = n1 + n2;
+                    qText = `${toArabicDigits(n1)} + ${toArabicDigits(n2)}`;
+                    // تمثيل بصري
+                    let dots1 = "●".repeat(n1);
+                    let dots2 = "●".repeat(n2);
+                    qVisual = `${dots1} + ${dots2}`;
+                } else {
+                    // طرح
+                    n1 = Math.floor(Math.random() * 11); // 0-10
+                    n2 = Math.floor(Math.random() * (n1 + 1));
+                    answer = n1 - n2;
+                    qText = `${toArabicDigits(n1)} - ${toArabicDigits(n2)}`;
+                    let dots1 = "●".repeat(n1);
+                    qVisual = `${dots1} - ${toArabicDigits(n2)}`;
+                }
+            } else {
+                // ضرب وقسمة (عليا)
+                if (Math.random() > 0.5) {
+                    // ضرب (0-10)
+                    n1 = Math.floor(Math.random() * 11);
+                    n2 = Math.floor(Math.random() * 11);
+                    answer = n1 * n2;
+                    qText = `${toArabicDigits(n1)} × ${toArabicDigits(n2)}`;
+                    qVisual = ""; // لا تمثيل للأعداد الكبيرة
+                } else {
+                    // قسمة (الناتج رقم واحد، المقسوم عليه رقم واحد)
+                    // نختار الناتج والمقسوم عليه أولاً
+                    let result = Math.floor(Math.random() * 10); // 0-9
+                    let divisor = Math.floor(Math.random() * 9) + 1; // 1-9 (تجنب القسمة على صفر)
+                    let dividend = result * divisor;
+                    
+                    answer = result;
+                    qText = `${toArabicDigits(dividend)} ÷ ${toArabicDigits(divisor)}`;
+                    qVisual = "";
+                }
+            }
+
+            currentQuestion = {
+                text: qText + " = ؟",
+                visual: qVisual,
+                answer: answer
+            };
+
+            // تحديث الواجهة
+            document.getElementById('qText').innerText = currentQuestion.text;
+            document.getElementById('qVisual').innerText = currentQuestion.visual;
+            
+            // إعادة تعيين الأعداء فوراً عند سؤال جديد
+            spawnEnemies(true); 
+        }
+
+        // توليد الأعداء (الإجابات)
+        function spawnEnemies(reset = false) {
+            if(reset) enemies = [];
+            
+            // الإجابة الصحيحة
+            let correctX = Math.random() * (canvas.width - 60) + 30;
+            enemies.push({
+                x: correctX,
+                y: -50,
+                value: currentQuestion.answer,
+                isCorrect: true,
+                speed: 1.5 + (level * 0.1),
+                color: '#4CAF50',
+                radius: 35
+            });
+
+            // إجابات خاطئة (2 أو 3)
+            let wrongCount = 2 + Math.floor(level / 3);
+            for(let i=0; i<wrongCount; i++) {
+                let wrongVal;
+                do {
+                    wrongVal = Math.floor(Math.random() * 15); // قيمة عشوائية قريبة
+                    if (gameMode === 'upper') wrongVal = Math.floor(Math.random() * 100);
+                } while (wrongVal === currentQuestion.answer);
+
+                enemies.push({
+                    x: Math.random() * (canvas.width - 60) + 30,
+                    y: -Math.random() * 200 - 50, // تباعد عشوائي
+                    value: wrongVal,
+                    isCorrect: false,
+                    speed: 2 + (level * 0.1),
+                    color: '#FF5252',
+                    radius: 30
+                });
+            }
+        }
+
+        // نظام الجسيمات (الانفجار)
+        function createExplosion(x, y, color) {
+            for(let i=0; i<15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 1.0,
+                    color: color
+                });
+            }
+        }
+
+        // --- التحكم ---
+        // اللمس
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            let touch = e.touches[0];
+            player.x = touch.clientX;
+        }, {passive: false});
+
+        canvas.addEventListener('touchstart', (e) => {
+             // إطلاق نار عند اللمس
+             bullets.push({x: player.x, y: player.y - 20});
+             playSound('shoot');
+        });
+
+        // الفأرة
+        canvas.addEventListener('mousemove', (e) => {
+            player.x = e.clientX;
+        });
+
+        canvas.addEventListener('mousedown', () => {
+             bullets.push({x: player.x, y: player.y - 20});
+             playSound('shoot');
+        });
+
+        // --- حلقة اللعبة الرئيسية ---
+        function update() {
+            if (gameState !== 'playing') return;
+
+            // تحديث الخلفية
+            ctx.fillStyle = '#050510';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // رسم النجوم
+            ctx.fillStyle = 'white';
+            stars.forEach(star => {
+                star.y += star.speed;
+                if (star.y > canvas.height) star.y = 0;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // رسم اللاعب
+            // شكل مثلث بسيط للمركبة
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.fillStyle = player.color;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = player.color;
+            ctx.beginPath();
+            ctx.moveTo(0, -30);
+            ctx.lineTo(20, 20);
+            ctx.lineTo(0, 10); // ذيل المحرك
+            ctx.lineTo(-20, 20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // تحديث الرصاص
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.y -= 10;
+                
+                // رسم الرصاصة
+                ctx.fillStyle = '#ffeb3b';
+                ctx.fillRect(b.x - 2, b.y, 4, 15);
+
+                if (b.y < 0) bullets.splice(i, 1);
+            }
+
+            // تحديث الأعداء (الأرقام)
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                e.y += e.speed;
+
+                // رسم العدو (دائرة + رقم)
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#333'; // لون الصخرة
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = e.color; // لون التوهج حسب النوع (للمطور فقط، اللاعب لا يعرف) - سنخفيه ونخليه رمادي للصعوبة أو ملون للجمال
+                // سنجعلها كلها بلون نيزكي واحد لتكون عادلة
+                ctx.strokeStyle = '#888'; 
+                ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 24px Cairo';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(toArabicDigits(e.value), e.x, e.y);
+
+                // فحص التصادم مع الرصاص
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    let b = bullets[j];
+                    let dist = Math.hypot(b.x - e.x, b.y - e.y);
+                    
+                    if (dist < e.radius) {
+                        // إصابة!
+                        createExplosion(e.x, e.y, e.isCorrect ? '#00ff00' : '#ff0000');
+                        bullets.splice(j, 1);
+                        enemies.splice(i, 1);
+                        
+                        if (e.isCorrect) {
+                            playSound('correct');
+                            score += 10;
+                            level += 0.2;
+                            document.getElementById('scoreDisplay').innerText = 'النقاط: ' + toArabicDigits(score);
+                            generateQuestion(); // سؤال جديد
+                        } else {
+                            playSound('explosion');
+                            lives--;
+                            updateLives();
+                            if (lives <= 0) gameOver();
+                        }
+                        break; // خروج من حلقة الرصاص
+                    }
+                }
+
+                // وصل للقاع
+                if (e.y > canvas.height + 50) {
+                    enemies.splice(i, 1);
+                    if (e.isCorrect) {
+                        // راحت عليه الإجابة الصحيحة
+                        lives--;
+                        updateLives();
+                        if (lives <= 0) gameOver();
+                        else {
+                            // إعادة طرح الإجابة الصحيحة
+                            spawnEnemies(false); // توليد المزيد دون مسح القديم
+                            // أو نعيد توليد السؤال لتجنب الإحباط
+                            generateQuestion();
+                        }
+                    }
+                }
+            }
+            
+            // إذا خلت الشاشة من الإجابة الصحيحة (بسبب التدمير أو المرور) ولم تنته اللعبة، نولد موجة جديدة لنفس السؤال
+            let hasCorrect = enemies.some(e => e.isCorrect);
+            if (!hasCorrect && enemies.length < 3 && gameState === 'playing') {
+                 // حالة نادرة: نعيد وضع الإجابة الصحيحة
+                 let correctX = Math.random() * (canvas.width - 60) + 30;
+                 enemies.push({
+                    x: correctX, y: -50, value: currentQuestion.answer, isCorrect: true, 
+                    speed: 2, color: '#4CAF50', radius: 35
+                });
+            }
+
+            // تحديث الجسيمات
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05;
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function updateLives() {
+            let hearts = "❤️".repeat(lives);
+            document.getElementById('healthDisplay').innerText = hearts;
+        }
+
+        function startGame(mode) {
+            gameMode = mode;
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameUI').classList.remove('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            
+            score = 0;
+            lives = 3;
+            level = 1;
+            enemies = [];
+            bullets = [];
+            particles = [];
+            
+            document.getElementById('scoreDisplay').innerText = 'النقاط: ٠';
+            updateLives();
+            
+            gameState = 'playing';
+            initStars();
+            generateQuestion();
+            update();
+        }
+
+        function gameOver() {
+            gameState = 'gameover';
+            document.getElementById('gameUI').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('finalScore').innerText = 'النقاط النهائية: ' + toArabicDigits(score);
+            playSound('explosion');
+        }
+
+        // بدء النجوم في الخلفية للقائمة
+        initStars();
+        function bgLoop() {
+            if (gameState === 'start') {
+                ctx.fillStyle = '#050510';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                stars.forEach(star => {
+                    star.y += star.speed;
+                    if (star.y > canvas.height) star.y = 0;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                requestAnimationFrame(bgLoop);
+            }
+        }
+        bgLoop();
+
+    </script>
+</body>
+</html>

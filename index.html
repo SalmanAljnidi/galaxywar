@@ -22,7 +22,7 @@
             touch-action: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
-            /* توسيط اللعبة في الشاشات العريضة */
+            /* توسيط اللعبة */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -33,7 +33,7 @@
         #gameContainer {
             position: relative;
             width: 100%;
-            max-width: 600px; /* تحديد العرض ليكون مناسباً للعب */
+            max-width: 600px; /* الحفاظ على أبعاد مناسبة */
             height: 100%;
             background: radial-gradient(circle at bottom, #1B2735 0%, #090A0F 100%);
             overflow: hidden;
@@ -96,13 +96,14 @@
             letter-spacing: 2px;
         }
 
-        /* --- زر الإطلاق المعدل --- */
+        /* --- زر الإطلاق (معدل المكان) --- */
         #fireBtn {
             position: absolute;
-            bottom: 25%; /* رفعناه للأعلى بشكل ملحوظ */
+            /* رفعناه بنسبة 30% ليكون بعيداً عن الأسفل تماماً */
+            bottom: 30%; 
             right: 20px;
-            width: 85px;
-            height: 85px;
+            width: 90px;
+            height: 90px;
             background: radial-gradient(circle, rgba(255, 60, 60, 0.5) 0%, rgba(180, 0, 0, 0.5) 100%);
             border-radius: 50%;
             border: 3px solid rgba(255, 255, 255, 0.4);
@@ -114,7 +115,6 @@
             align-items: center;
             cursor: pointer;
             backdrop-filter: blur(2px);
-            /* يظهر في كل الأجهزة الآن */
         }
         
         #fireBtn:active { 
@@ -124,11 +124,11 @@
         
         #fireBtn::after {
             content: '🔥';
-            font-size: 2.2rem;
+            font-size: 2.5rem;
             opacity: 0.9;
         }
 
-        /* الشاشات المنبثقة */
+        /* الشاشات */
         .screen {
             position: absolute;
             top: 0;
@@ -272,7 +272,6 @@
         const toArabicDigits = (n) => n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 
         function resize() {
-            // نأخذ أبعاد الحاوية (Container) وليس النافذة كاملة لضمان التوافق مع العرض المحدد
             canvas.width = gameContainer.clientWidth;
             canvas.height = gameContainer.clientHeight;
         }
@@ -281,14 +280,14 @@
 
         const player = {
             x: canvas.width / 2,
-            y: canvas.height - 120,
+            // رفعنا الطائرة للأعلى بشكل كبير (180 بكسل من الأسفل)
+            y: canvas.height - 180, 
             width: 60,
-            height: 60,
-            speed: 10, // سرعة متوازنة
+            height: 70,
+            speed: 10, 
             color: '#00ffff'
         };
 
-        // Audio setup (same as before)
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -374,7 +373,6 @@
 
         function spawnEnemies(reset = false) {
             if(reset) enemies = [];
-            // Spawn within canvas bounds
             let safeWidth = canvas.width - 60;
             let correctX = Math.random() * safeWidth + 30;
             enemies.push({ x: correctX, y: -50, value: currentQuestion.answer, isCorrect: true, speed: 1.5 + (level * 0.1), color: '#4CAF50', radius: 35 });
@@ -394,11 +392,11 @@
         }
 
         function shoot() {
-            bullets.push({x: player.x, y: player.y - 20});
+            // انطلاق الرصاص من مقدمة الطائرة
+            bullets.push({x: player.x, y: player.y - 40});
             playSound('shoot');
         }
 
-        // --- التحكم ---
         window.addEventListener('keydown', (e) => {
             if (e.code === 'ArrowRight') keys.ArrowRight = true;
             if (e.code === 'ArrowLeft') keys.ArrowLeft = true;
@@ -410,16 +408,13 @@
             if (e.code === 'Space') keys.Space = false;
         });
 
-        // زر الإطلاق (لمس + ماوس)
         function handleFire(e) {
             e.preventDefault(); e.stopPropagation(); shoot();
         }
         fireBtn.addEventListener('touchstart', handleFire, {passive: false});
         fireBtn.addEventListener('mousedown', handleFire);
 
-        // حركة اللمس/الماوس للمركبة
         function handleMove(clientX) {
-            // حساب الموقع بالنسبة للحاوية المحددة (وليس الشاشة كاملة)
             const rect = canvas.getBoundingClientRect();
             let relativeX = clientX - rect.left;
             player.x = relativeX;
@@ -431,24 +426,81 @@
         }, {passive: false});
 
         canvas.addEventListener('mousemove', (e) => {
-            // السماح بالتحكم بالماوس أيضاً لمن يستخدم الكمبيوتر
             if (gameState === 'playing') handleMove(e.clientX);
         });
 
         function updatePlayerPosition() {
             if (keys.ArrowRight) player.x += player.speed;
             if (keys.ArrowLeft) player.x -= player.speed;
-            
-            // التأكد من بقاء اللاعب داخل حدود الـ Canvas الجديدة
             if (player.x < 30) player.x = 30;
             if (player.x > canvas.width - 30) player.x = canvas.width - 30;
+            
+            // التأكد من أن الطائرة لا تنزل للأسفل إذا تغير حجم الشاشة
+            player.y = canvas.height - 180;
+        }
+
+        // --- رسم الطائرة الحربية المميزة ---
+        function drawFighterJet(ctx, x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // 1. لهب المحرك (متحرك)
+            const flameHeight = Math.random() * 10 + 10;
+            ctx.fillStyle = '#ff9800';
+            ctx.beginPath();
+            ctx.moveTo(-5, 30);
+            ctx.lineTo(0, 30 + flameHeight);
+            ctx.lineTo(5, 30);
+            ctx.fill();
+
+            // 2. الأجنحة الخلفية (Tail)
+            ctx.fillStyle = '#A0A0A0';
+            ctx.beginPath();
+            ctx.moveTo(0, 10);
+            ctx.lineTo(-20, 30);
+            ctx.lineTo(20, 30);
+            ctx.fill();
+
+            // 3. الأجنحة الرئيسية (Main Wings)
+            ctx.fillStyle = '#C0C0C0';
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.lineTo(-35, 20);
+            ctx.lineTo(35, 20);
+            ctx.fill();
+            
+            // تزيين الأجنحة
+            ctx.strokeStyle = '#00FFFF';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.lineTo(-35, 20);
+            ctx.moveTo(0, -10);
+            ctx.lineTo(35, 20);
+            ctx.stroke();
+
+            // 4. جسم الطائرة (Fuselage)
+            ctx.fillStyle = '#E0E0E0';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 10, 35, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 5. قمرة القيادة (Cockpit)
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.ellipse(0, -10, 5, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
         }
 
         function update() {
             if (gameState !== 'playing') return;
             updatePlayerPosition();
 
-            // رسم الخلفية
             ctx.fillStyle = '#050510';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -461,25 +513,13 @@
                 ctx.fill();
             });
 
-            // اللاعب
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.fillStyle = player.color;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = player.color;
-            ctx.beginPath();
-            ctx.moveTo(0, -30);
-            ctx.lineTo(20, 20);
-            ctx.lineTo(0, 10);
-            ctx.lineTo(-20, 20);
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
+            // رسم الطائرة الجديدة
+            drawFighterJet(ctx, player.x, player.y);
 
             // الرصاص
             for (let i = bullets.length - 1; i >= 0; i--) {
                 let b = bullets[i];
-                b.y -= 10;
+                b.y -= 12; // رصاص أسرع قليلاً
                 ctx.fillStyle = '#ffeb3b';
                 ctx.fillRect(b.x - 2, b.y, 4, 15);
                 if (b.y < 0) bullets.splice(i, 1);
@@ -500,10 +540,9 @@
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(toArabicDigits(e.value), e.x, e.y);
 
-                // تصادم
                 for (let j = bullets.length - 1; j >= 0; j--) {
                     let b = bullets[j];
-                    if (Math.hypot(b.x - e.x, b.y - e.y) < e.radius) {
+                    if (Math.hypot(b.x - e.x, b.y - e.y) < e.radius + 10) { // توسيع منطقة الإصابة قليلاً
                         createExplosion(e.x, e.y, e.isCorrect ? '#00ff00' : '#ff0000');
                         bullets.splice(j, 1);
                         enemies.splice(i, 1);
@@ -528,7 +567,6 @@
                 }
             }
             
-            // ضمان وجود إجابة صحيحة
             let hasCorrect = enemies.some(e => e.isCorrect);
             if (!hasCorrect && enemies.length < 3 && gameState === 'playing') {
                  let safeWidth = canvas.width - 60;
@@ -536,7 +574,6 @@
                  enemies.push({x: correctX, y: -50, value: currentQuestion.answer, isCorrect: true, speed: 2, color: '#4CAF50', radius: 35});
             }
 
-            // الجسيمات
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
                 p.x += p.vx; p.y += p.vy; p.life -= 0.05;
@@ -557,8 +594,8 @@
             document.getElementById('gameOverScreen').classList.add('hidden');
             score = 0; lives = 3; level = 1; enemies = []; bullets = []; particles = [];
             document.getElementById('scoreDisplay').innerText = 'النقاط: ٠';
-            resize(); // تأكيد الحجم
-            player.x = canvas.width / 2; // إعادة توسيط اللاعب
+            resize(); 
+            player.x = canvas.width / 2;
             updateLives();
             gameState = 'playing';
             initStars();

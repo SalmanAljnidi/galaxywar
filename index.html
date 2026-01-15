@@ -2,14 +2,13 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>حامي المجرة: معركة الأرقام</title>
     
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#050510">
-    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjogIuLmNinZiiDYp9mE2YXYrNix2KQiLCAic2hvcnRfbmFtZSI6ICLi5jYp2Yog2KfZhNmF2KzYsdipIiwgInN0YXJ0X3VybCI6ICIuIiwgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwNTBBMTAiLCAidGhlbWVfY29sb3IiOiAiIzA1MEExMCIsICJpY29ucyI6IFt7InNyYyI6ICJodHRwczovL2ltZy5pY29uczhuLmNvbS9mbHVlbnQvOTYvMDAwMDAwL3JvY2tldC5wbmciLCAic2l6ZXMiOiAiOTZ4OTYiLCAidHlwZSI6ICJpbWFnZS9wbmcifV19">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
@@ -23,6 +22,7 @@
             overflow: hidden;
             touch-action: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #gameContainer {
@@ -32,6 +32,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
         }
 
         canvas {
@@ -61,6 +62,7 @@
             font-size: 1.5rem;
             font-weight: bold;
             text-shadow: 0 0 10px #00ffff;
+            pointer-events: none;
         }
 
         .question-box {
@@ -77,6 +79,8 @@
             padding: 10px 30px;
             border-radius: 20px;
             border: 2px solid #ff9800;
+            width: 80%;
+            max-width: 400px;
         }
 
         .visual-dots {
@@ -86,32 +90,36 @@
             letter-spacing: 2px;
         }
 
-        /* زر الإطلاق للجوال */
+        /* --- تعديل زر الإطلاق (المهم) --- */
         #fireBtn {
             position: absolute;
-            bottom: 30px;
-            right: 30px;
-            width: 80px;
-            height: 80px;
-            background: radial-gradient(circle, #ff5252 0%, #b71c1c 100%);
+            bottom: 18%; /* رفعناه للأعلى بنسبة كبيرة */
+            right: 8%;   /* إزاحة عن اليمين قليلاً */
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle, rgba(255, 82, 82, 0.6) 0%, rgba(183, 28, 28, 0.6) 100%); /* شفاف قليلاً */
             border-radius: 50%;
-            border: 4px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
             pointer-events: auto;
-            z-index: 20;
+            z-index: 100; /* فوق كل شيء */
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
             transition: transform 0.1s;
+            backdrop-filter: blur(2px); /* تأثير زجاجي */
         }
         
-        #fireBtn:active { transform: scale(0.9); background: #ff0000; }
+        #fireBtn:active { 
+            transform: scale(0.9); 
+            background: rgba(255, 0, 0, 0.8); 
+        }
         
-        /* أيقونة داخل الزر */
         #fireBtn::after {
             content: '🔥';
-            font-size: 2rem;
+            font-size: 2.5rem;
+            opacity: 0.8;
         }
 
         /* الشاشات المنبثقة */
@@ -154,6 +162,8 @@
             margin: 10px;
             box-shadow: 0 0 15px rgba(221, 36, 118, 0.6);
             transition: transform 0.2s;
+            width: 80%;
+            max-width: 300px;
         }
         .btn:hover { transform: scale(1.05); }
         .btn-blue { background: linear-gradient(45deg, #1A2980, #26D0CE); box-shadow: 0 0 15px rgba(38, 208, 206, 0.6); }
@@ -167,21 +177,23 @@
             flex-direction: column;
             align-items: center;
             gap: 10px;
+            width: 100%;
         }
         .copyright { color: #888; font-size: 0.9rem; }
-        .social-links { display: flex; gap: 20px; margin-top: 10px; }
+        .social-links { display: flex; gap: 20px; margin-top: 10px; pointer-events: auto; }
         .social-icon {
-            width: 40px; height: 40px;
+            width: 45px; height: 45px;
             display: flex; justify-content: center; align-items: center;
             background: rgba(255,255,255,0.1);
             border-radius: 50%;
             transition: all 0.3s;
             text-decoration: none;
+            z-index: 60;
         }
-        .social-icon svg { width: 24px; height: 24px; fill: white; }
+        .social-icon svg { width: 26px; height: 26px; fill: white; }
         .social-icon.whatsapp:hover { background: #25D366; box-shadow: 0 0 15px #25D366; }
         .social-icon.snapchat:hover { background: #FFFC00; box-shadow: 0 0 15px #FFFC00; }
-        .social-icon.snapchat svg { fill: black; } /* سناب أيقونته سوداء على خلفية صفراء */
+        .social-icon.snapchat svg { fill: black; } 
         .social-icon.snapchat:hover svg { fill: black; }
 
         /* إخفاء زر الإطلاق في الكمبيوتر */
@@ -209,7 +221,7 @@
 
         <div id="startScreen" class="screen">
             <h1>حامي المجرة</h1>
-            <p style="color: #00ffff; font-size: 1.1rem; margin-bottom: 20px;">استخدم الأسهم للحركة والمسافة للإطلاق (أو اللمس والزر الأحمر)</p>
+            <p style="color: #00ffff; font-size: 1.1rem; margin-bottom: 20px;">العب باستخدام الأسهم والمسافة (كمبيوتر)<br>أو اللمس والزر الأحمر (جوال)</p>
             
             <button class="btn btn-blue" onclick="startGame('lower')">الصفوف الأولية (جمع/طرح)</button>
             <button class="btn" onclick="startGame('upper')">الصفوف العليا (ضرب/قسمة)</button>
@@ -238,7 +250,6 @@
     </div>
 
     <script>
-        // --- إعدادات اللعبة ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const fireBtn = document.getElementById('fireBtn');
@@ -254,8 +265,6 @@
         let particles = [];
         let bullets = [];
         let stars = [];
-        
-        // حالة المفاتيح
         let keys = { ArrowRight: false, ArrowLeft: false, Space: false };
 
         const toEnglishDigits = (str) => str.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
@@ -268,11 +277,10 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- كائنات اللعبة ---
-
+        // اللاعب
         const player = {
             x: canvas.width / 2,
-            y: canvas.height - 120, // رفعنا اللاعب قليلاً بسبب زر الإطلاق
+            y: canvas.height - 120,
             width: 60,
             height: 60,
             speed: 15,
@@ -393,14 +401,12 @@
             playSound('shoot');
         }
 
-        // --- التحكم الجديد ---
-        
-        // 1. لوحة المفاتيح
+        // --- التحكم ---
         window.addEventListener('keydown', (e) => {
             if (e.code === 'ArrowRight') keys.ArrowRight = true;
             if (e.code === 'ArrowLeft') keys.ArrowLeft = true;
             if (e.code === 'Space') {
-                if (!keys.Space) shoot(); // منع التكرار السريع عند التعليق
+                if (!keys.Space) shoot();
                 keys.Space = true;
             }
         });
@@ -411,38 +417,35 @@
             if (e.code === 'Space') keys.Space = false;
         });
 
-        // 2. زر الإطلاق (جوال)
+        // زر الإطلاق مع منع التكبير بالخطأ
         fireBtn.addEventListener('touchstart', (e) => {
             e.preventDefault(); 
+            e.stopPropagation();
             shoot();
         }, {passive: false});
         
         fireBtn.addEventListener('mousedown', (e) => {
             e.preventDefault(); 
+            e.stopPropagation();
             shoot();
         });
 
-        // 3. حركة اللمس (بدون إطلاق)
+        // حركة اللمس
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             let touch = e.touches[0];
             player.x = touch.clientX;
         }, {passive: false});
 
-        // تحديث الموقع بناءً على المدخلات
         function updatePlayerPosition() {
             if (keys.ArrowRight) player.x += player.speed;
             if (keys.ArrowLeft) player.x -= player.speed;
-            
-            // حدود الشاشة
             if (player.x < 30) player.x = 30;
             if (player.x > canvas.width - 30) player.x = canvas.width - 30;
         }
 
-        // --- الحلقة الرئيسية ---
         function update() {
             if (gameState !== 'playing') return;
-
             updatePlayerPosition();
 
             ctx.fillStyle = '#050510';
@@ -457,7 +460,6 @@
                 ctx.fill();
             });
 
-            // رسم اللاعب
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.fillStyle = player.color;
@@ -472,7 +474,6 @@
             ctx.fill();
             ctx.restore();
 
-            // الرصاص
             for (let i = bullets.length - 1; i >= 0; i--) {
                 let b = bullets[i];
                 b.y -= 10;
@@ -481,7 +482,6 @@
                 if (b.y < 0) bullets.splice(i, 1);
             }
 
-            // الأعداء
             for (let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i];
                 e.y += e.speed;

@@ -1,0 +1,21 @@
+{
+    "name": "حامي المجرة",
+    "short_name": "حامي المجرة",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#050510",
+    "theme_color": "#050510",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/1356/1356479.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/1356/1356479.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

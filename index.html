@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>حامي المجرة: معركة الأرقام</title>
+    <title>حامي المجرة</title>
     
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#050510">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1356/1356479.png">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
@@ -22,7 +22,6 @@
             touch-action: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
-            /* توسيط اللعبة */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -33,7 +32,7 @@
         #gameContainer {
             position: relative;
             width: 100%;
-            max-width: 600px; /* الحفاظ على أبعاد مناسبة */
+            max-width: 600px;
             height: 100%;
             background: radial-gradient(circle at bottom, #1B2735 0%, #090A0F 100%);
             overflow: hidden;
@@ -48,7 +47,6 @@
             height: 100%;
         }
 
-        /* واجهة المستخدم */
         .ui-layer {
             position: absolute;
             top: 0;
@@ -96,10 +94,8 @@
             letter-spacing: 2px;
         }
 
-        /* --- زر الإطلاق (معدل المكان) --- */
         #fireBtn {
             position: absolute;
-            /* رفعناه بنسبة 30% ليكون بعيداً عن الأسفل تماماً */
             bottom: 30%; 
             right: 20px;
             width: 90px;
@@ -117,18 +113,9 @@
             backdrop-filter: blur(2px);
         }
         
-        #fireBtn:active { 
-            transform: scale(0.9); 
-            background: rgba(255, 0, 0, 0.7); 
-        }
-        
-        #fireBtn::after {
-            content: '🔥';
-            font-size: 2.5rem;
-            opacity: 0.9;
-        }
+        #fireBtn:active { transform: scale(0.9); background: rgba(255, 0, 0, 0.7); }
+        #fireBtn::after { content: '🔥'; font-size: 2.5rem; opacity: 0.9; }
 
-        /* الشاشات */
         .screen {
             position: absolute;
             top: 0;
@@ -174,7 +161,6 @@
         .btn:hover { transform: scale(1.05); }
         .btn-blue { background: linear-gradient(45deg, #1A2980, #26D0CE); box-shadow: 0 0 15px rgba(38, 208, 206, 0.6); }
 
-        /* التذييل */
         .footer {
             margin-top: 20px;
             border-top: 1px solid rgba(255,255,255,0.1);
@@ -200,7 +186,6 @@
         .social-icon.snapchat:hover { background: #FFFC00; box-shadow: 0 0 15px #FFFC00; }
         .social-icon.snapchat svg { fill: black; } 
         .social-icon.snapchat:hover svg { fill: black; }
-
     </style>
 </head>
 <body>
@@ -223,7 +208,6 @@
         <div id="startScreen" class="screen">
             <h1>حامي المجرة</h1>
             <p style="color: #00ffff; font-size: 1rem; margin-bottom: 20px;">حرك المركبة وأطلق على الإجابة الصحيحة</p>
-            
             <button class="btn btn-blue" onclick="startGame('lower')">الصفوف الأولية (جمع/طرح)</button>
             <button class="btn" onclick="startGame('upper')">الصفوف العليا (ضرب/قسمة)</button>
 
@@ -251,6 +235,17 @@
     </div>
 
     <script>
+        // تسجيل Service Worker للتثبيت
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful');
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const fireBtn = document.getElementById('fireBtn');
@@ -280,7 +275,6 @@
 
         const player = {
             x: canvas.width / 2,
-            // رفعنا الطائرة للأعلى بشكل كبير (180 بكسل من الأسفل)
             y: canvas.height - 180, 
             width: 60,
             height: 70,
@@ -392,7 +386,6 @@
         }
 
         function shoot() {
-            // انطلاق الرصاص من مقدمة الطائرة
             bullets.push({x: player.x, y: player.y - 40});
             playSound('shoot');
         }
@@ -408,9 +401,7 @@
             if (e.code === 'Space') keys.Space = false;
         });
 
-        function handleFire(e) {
-            e.preventDefault(); e.stopPropagation(); shoot();
-        }
+        function handleFire(e) { e.preventDefault(); e.stopPropagation(); shoot(); }
         fireBtn.addEventListener('touchstart', handleFire, {passive: false});
         fireBtn.addEventListener('mousedown', handleFire);
 
@@ -420,78 +411,45 @@
             player.x = relativeX;
         }
 
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            handleMove(e.touches[0].clientX);
-        }, {passive: false});
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (gameState === 'playing') handleMove(e.clientX);
-        });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e.touches[0].clientX); }, {passive: false});
+        canvas.addEventListener('mousemove', (e) => { if (gameState === 'playing') handleMove(e.clientX); });
 
         function updatePlayerPosition() {
             if (keys.ArrowRight) player.x += player.speed;
             if (keys.ArrowLeft) player.x -= player.speed;
             if (player.x < 30) player.x = 30;
             if (player.x > canvas.width - 30) player.x = canvas.width - 30;
-            
-            // التأكد من أن الطائرة لا تنزل للأسفل إذا تغير حجم الشاشة
             player.y = canvas.height - 180;
         }
 
-        // --- رسم الطائرة الحربية المميزة ---
         function drawFighterJet(ctx, x, y) {
             ctx.save();
             ctx.translate(x, y);
             
-            // 1. لهب المحرك (متحرك)
+            // لهب
             const flameHeight = Math.random() * 10 + 10;
             ctx.fillStyle = '#ff9800';
-            ctx.beginPath();
-            ctx.moveTo(-5, 30);
-            ctx.lineTo(0, 30 + flameHeight);
-            ctx.lineTo(5, 30);
-            ctx.fill();
+            ctx.beginPath(); ctx.moveTo(-5, 30); ctx.lineTo(0, 30 + flameHeight); ctx.lineTo(5, 30); ctx.fill();
 
-            // 2. الأجنحة الخلفية (Tail)
+            // ذيل
             ctx.fillStyle = '#A0A0A0';
-            ctx.beginPath();
-            ctx.moveTo(0, 10);
-            ctx.lineTo(-20, 30);
-            ctx.lineTo(20, 30);
-            ctx.fill();
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-20, 30); ctx.lineTo(20, 30); ctx.fill();
 
-            // 3. الأجنحة الرئيسية (Main Wings)
+            // أجنحة
             ctx.fillStyle = '#C0C0C0';
-            ctx.beginPath();
-            ctx.moveTo(0, -10);
-            ctx.lineTo(-35, 20);
-            ctx.lineTo(35, 20);
-            ctx.fill();
+            ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(-35, 20); ctx.lineTo(35, 20); ctx.fill();
             
-            // تزيين الأجنحة
-            ctx.strokeStyle = '#00FFFF';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -10);
-            ctx.lineTo(-35, 20);
-            ctx.moveTo(0, -10);
-            ctx.lineTo(35, 20);
-            ctx.stroke();
+            ctx.strokeStyle = '#00FFFF'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(-35, 20); ctx.moveTo(0, -10); ctx.lineTo(35, 20); ctx.stroke();
 
-            // 4. جسم الطائرة (Fuselage)
+            // جسم
             ctx.fillStyle = '#E0E0E0';
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 10, 35, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.ellipse(0, 0, 10, 35, 0, 0, Math.PI * 2); ctx.fill();
 
-            // 5. قمرة القيادة (Cockpit)
+            // قمرة
             ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
-            ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 10;
-            ctx.beginPath();
-            ctx.ellipse(0, -10, 5, 12, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.ellipse(0, -10, 5, 12, 0, 0, Math.PI * 2); ctx.fill();
             ctx.shadowBlur = 0;
 
             ctx.restore();
@@ -501,69 +459,48 @@
             if (gameState !== 'playing') return;
             updatePlayerPosition();
 
-            ctx.fillStyle = '#050510';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#050510'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             ctx.fillStyle = 'rgba(255,255,255,0.7)';
             stars.forEach(star => {
-                star.y += star.speed;
-                if (star.y > canvas.height) star.y = 0;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
+                star.y += star.speed; if (star.y > canvas.height) star.y = 0;
+                ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill();
             });
 
-            // رسم الطائرة الجديدة
             drawFighterJet(ctx, player.x, player.y);
 
-            // الرصاص
             for (let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i];
-                b.y -= 12; // رصاص أسرع قليلاً
-                ctx.fillStyle = '#ffeb3b';
-                ctx.fillRect(b.x - 2, b.y, 4, 15);
+                let b = bullets[i]; b.y -= 12;
+                ctx.fillStyle = '#ffeb3b'; ctx.fillRect(b.x - 2, b.y, 4, 15);
                 if (b.y < 0) bullets.splice(i, 1);
             }
 
-            // الأعداء
             for (let i = enemies.length - 1; i >= 0; i--) {
-                let e = enemies[i];
-                e.y += e.speed;
-
-                ctx.beginPath();
-                ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+                let e = enemies[i]; e.y += e.speed;
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
                 ctx.fillStyle = '#333'; ctx.fill();
                 ctx.lineWidth = 3; ctx.strokeStyle = '#888'; ctx.stroke();
-
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 24px Cairo';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Cairo'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(toArabicDigits(e.value), e.x, e.y);
 
                 for (let j = bullets.length - 1; j >= 0; j--) {
                     let b = bullets[j];
-                    if (Math.hypot(b.x - e.x, b.y - e.y) < e.radius + 10) { // توسيع منطقة الإصابة قليلاً
+                    if (Math.hypot(b.x - e.x, b.y - e.y) < e.radius + 10) {
                         createExplosion(e.x, e.y, e.isCorrect ? '#00ff00' : '#ff0000');
-                        bullets.splice(j, 1);
-                        enemies.splice(i, 1);
+                        bullets.splice(j, 1); enemies.splice(i, 1);
                         if (e.isCorrect) {
                             playSound('correct'); score += 10; level += 0.2;
                             document.getElementById('scoreDisplay').innerText = 'النقاط: ' + toArabicDigits(score);
                             generateQuestion();
                         } else {
-                            playSound('explosion'); lives--; updateLives();
-                            if (lives <= 0) gameOver();
+                            playSound('explosion'); lives--; updateLives(); if (lives <= 0) gameOver();
                         }
                         break;
                     }
                 }
                 if (e.y > canvas.height + 50) {
                     enemies.splice(i, 1);
-                    if (e.isCorrect) {
-                        lives--; updateLives();
-                        if (lives <= 0) gameOver();
-                        else { spawnEnemies(false); generateQuestion(); }
-                    }
+                    if (e.isCorrect) { lives--; updateLives(); if (lives <= 0) gameOver(); else { spawnEnemies(false); generateQuestion(); } }
                 }
             }
             
@@ -594,13 +531,8 @@
             document.getElementById('gameOverScreen').classList.add('hidden');
             score = 0; lives = 3; level = 1; enemies = []; bullets = []; particles = [];
             document.getElementById('scoreDisplay').innerText = 'النقاط: ٠';
-            resize(); 
-            player.x = canvas.width / 2;
-            updateLives();
-            gameState = 'playing';
-            initStars();
-            generateQuestion();
-            update();
+            resize(); player.x = canvas.width / 2;
+            updateLives(); gameState = 'playing'; initStars(); generateQuestion(); update();
         }
 
         function gameOver() {
@@ -614,8 +546,7 @@
         initStars();
         function bgLoop() {
             if (gameState === 'start') {
-                ctx.fillStyle = '#050510';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#050510'; ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                 stars.forEach(star => {
                     star.y += star.speed; if (star.y > canvas.height) star.y = 0;
